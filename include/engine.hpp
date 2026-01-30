@@ -85,14 +85,14 @@ namespace Comps {
 
         Camera() = default;
     };
-    struct SpriteManager {
-        struct ts {
-            sf::Texture txtr;
-            std::unique_ptr<sf::Sprite> spr;
-        };
-        std::array<ts, static_cast<size_t>(BLOCK::COUNT)> arr;
+    struct VisualManager {
+        sf::Texture atlas;
+        sf::VertexArray va;
+        std::array<sf::IntRect, static_cast<size_t>(BLOCK::COUNT)> visuals;
 
-        SpriteManager() = default;
+        VisualManager() {
+            va.setPrimitiveType(sf::PrimitiveType::Triangles);
+        };
     };
 };
 
@@ -102,7 +102,7 @@ concept WorldComponent =
     std::is_same_v<T, Comps::Velocity> ||
     std::is_same_v<T, Comps::Camera> ||
     std::is_same_v<T, Comps::BlockStorage> ||
-    std::is_same_v<T, Comps::SpriteManager>;
+    std::is_same_v<T, Comps::VisualManager>;
 
 class LIB_API WorldStorage {
     private:
@@ -110,7 +110,7 @@ class LIB_API WorldStorage {
         PackedStorage<Comps::Velocity> velocities;
         PackedStorage<Comps::Camera> cameras;
         PackedStorage<Comps::BlockStorage> chunks;
-        PackedStorage<Comps::SpriteManager> sprites;
+        PackedStorage<Comps::VisualManager> sprites;
 
         Entity it;
     public:
@@ -129,7 +129,7 @@ class LIB_API WorldStorage {
                 return cameras;
             if constexpr (std::is_same_v<T, Comps::BlockStorage>)
                 return chunks;
-            if constexpr (std::is_same_v<T, Comps::SpriteManager>)
+            if constexpr (std::is_same_v<T, Comps::VisualManager>)
                 return sprites;
         }
 
@@ -143,7 +143,7 @@ class LIB_API WorldStorage {
         void generate_world();
         void prepare_for_loop();
         void apply_tick();
-        void draw_world(Comps::Camera& camera, Comps::SpriteManager& blocks);
+        void draw_world(Comps::Camera& camera, Comps::VisualManager& blocks);
 };
 
 class LIB_API EntityBuilder {
@@ -162,7 +162,7 @@ class LIB_API EntityBuilder {
 };
 
 namespace Misc {
-    LIB_API void load_block_sprites(Comps::SpriteManager& blocks);
+    LIB_API void load_block_sprites(Comps::VisualManager& blocks);
 
     inline LIB_API Vector2f to_scr(Vector2f coords) {
         return Vector2f{ coords.x + K::WIN_SIZE.x / 2.0f, K::WIN_SIZE.y / 2.0f - coords.y }; 

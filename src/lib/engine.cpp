@@ -38,62 +38,15 @@ void WorldStorage::apply_tick() {
         t.pos.y += v.vel.y;
     }
 }
-void WorldStorage::draw_world(Comps::Camera& camera, SpriteManager& blocks) {
+void WorldStorage::draw_world(Comps::Camera& camera, VisualManager& blocks) {
 
-    Entity& cam_entity = cameras.entity_of(camera);
-    Transform& cam_pos = transforms.data_of(cam_entity);
-
-    camera.canvas->clear(sf::Color::Transparent);
-
-    const float chunk_ws = K::CHUNK_W * K::BLOCK_S;
-    const float chunk_hs = K::CHUNK_H * K::BLOCK_S;
-
-    int chunk_index = 0;
-    for (auto it = chunks.data_begin(); it != chunks.data_end(); ++it, ++chunk_index) {
-        
-        Vector2f chunk_offset{chunk_ws * chunk_index, 0};
-
-        for (int i = 0; i < K::CHUNK_H * K::CHUNK_W; ++i) {
-            int r = i / K::CHUNK_W;
-            int c = i % K::CHUNK_W;
-            
-            if (it->arr[r][c] == BLOCK::AIR)
-                continue;
-
-            Vector2f world_coord{c*K::BLOCK_S, -r*K::BLOCK_S};
-            world_coord += chunk_offset;
-
-            Vector2f rel = world_coord - cam_pos.pos;
-            Vector2f scr_coord = Misc::to_scr(rel);
-
-            sf::Sprite& block(*blocks.arr[static_cast<size_t>(BLOCK::DIRT)].spr);
-            block.setPosition(scr_coord);
-
-            camera.canvas->draw(block);
-        }
-    }
-    camera.canvas->display();
-
-    const sf::Texture& done = camera.canvas->getTexture();
-    if (!camera.drawable)
-        camera.drawable = std::make_unique<sf::Sprite>(done);
-    camera.drawable->setTexture(done, true);
 }
 
-void Misc::load_block_sprites(SpriteManager& blocks) {
-    sf::Texture dirt_txtr;
-    if (!dirt_txtr.loadFromFile("res\\texture\\block\\dirt.png"))
+void Misc::load_block_sprites(VisualManager& blocks) {
+    sf::Texture atlas;
+    if (!atlas.loadFromFile("res\\texture\\block_list.png"))
         return;
-    dirt_txtr.setSmooth(false);
-
-    Vector2f scale{
-        K::BLOCK_S / dirt_txtr.getSize().x,
-        K::BLOCK_S / dirt_txtr.getSize().y
-    };
-
-    blocks.arr[static_cast<size_t>(BLOCK::DIRT)].txtr = std::move(dirt_txtr);
-
-    sf::Sprite dirt_spr(blocks.arr[static_cast<size_t>(BLOCK::DIRT)].txtr);
-    dirt_spr.setScale(scale);
-    blocks.arr[static_cast<size_t>(BLOCK::DIRT)].spr = std::make_unique<sf::Sprite>(std::move(dirt_spr));
+    atlas.setSmooth(false);
+    blocks.atlas = std::move(atlas);
+    blocks.visuals[static_cast<int>(BLOCK::DIRT)] = {{0,0}, {16,16}};
 }
