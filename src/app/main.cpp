@@ -3,27 +3,6 @@
 
 int main(void) {
 
-    WorldStorage world;
-
-    Entity player = 1;
-    std::vector<Entity> chunk_holders;
-        chunk_holders.push_back(100);
-        chunk_holders.push_back(101);
-
-    Misc::load_res(world);
-
-    auto& transforms = world.get_storage_of_component<Comps::Transform>();
-    auto& velocities = world.get_storage_of_component<Comps::Velocity>();
-    auto& cameras    = world.get_storage_of_component<Comps::Camera>();
-    auto& chunks     = world.get_storage_of_component<Comps::BlockStorage>();
-
-    auto& player_pos  = transforms.emplace(player, Comps::Transform{{50.0f, -50.0f}});
-    auto& player_vel  = velocities.emplace(player, Comps::Velocity{{0.0f, 0.0f}});
-    auto& main_camera = cameras.emplace(player, Comps::Camera{});
-
-    for (auto& chunk : chunk_holders)
-        chunks.emplace(chunk, Comps::BlockStorage{});
-
     sf::RenderWindow window(
         sf::VideoMode(K::WIN_SIZE), 
         "MINE2D", 
@@ -31,18 +10,36 @@ int main(void) {
     );
     window.setVerticalSyncEnabled(true);
 
-    world.generate_world();
-    world.prepare_for_loop();
+    WorldStorage world;
 
+    auto player = world.create_entity()
+        .with<Comps::Transform>(0.0f, 0.0f)
+        .with<Comps::Velocity>(0.0f, 0.0f)
+        .with<Comps::Camera>();
+    
+    auto sprite_holder = world.create_entity()
+        .with<Comps::SpriteManager>();
+    
+    std::vector<EntityBuilder> chunk_holders;
+        chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
+        chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
+    world.generate_world();
+
+    auto& block_sprites = world.get<Comps::SpriteManager>(sprite_holder);
+    auto& main_camera   = world.get<Comps::Camera>(player);
+
+    Misc::load_block_sprites(block_sprites);
+    
+    world.prepare_for_loop();
     while (window.isOpen()) {
         while(const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color::Black);
+        window.clear(sf::Color::Transparent);
 
         world.apply_tick();
-        world.draw_world(main_camera);
+        world.draw_world(main_camera, block_sprites);
 
         window.draw(*main_camera.drawable);
         window.display();

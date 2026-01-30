@@ -2,8 +2,10 @@
 
 using namespace Comps;
 
-std::unordered_map<BLOCK, sf::Texture> BlockStorage::textures{};
-std::unordered_map<BLOCK, sf::Sprite>  BlockStorage::sprites{};
+EntityBuilder WorldStorage::create_entity() {
+    it+=1;
+    return EntityBuilder{*this, it};
+}
 
 void WorldStorage::generate_world() {
     for (size_t i = 0; i < chunks.data_size(); ++i) {
@@ -36,7 +38,7 @@ void WorldStorage::apply_tick() {
         t.pos.y += v.vel.y;
     }
 }
-void WorldStorage::draw_world(Comps::Camera& camera) {
+void WorldStorage::draw_world(Comps::Camera& camera, SpriteManager& blocks) {
 
     Entity& cam_entity = cameras.entity_of(camera);
     Transform& cam_pos = transforms.data_of(cam_entity);
@@ -64,7 +66,7 @@ void WorldStorage::draw_world(Comps::Camera& camera) {
             Vector2f rel = world_coord - cam_pos.pos;
             Vector2f scr_coord = Misc::to_scr(rel);
 
-            sf::Sprite& block = it->sprites.at(it->arr[r][c]);
+            sf::Sprite& block(*blocks.arr[static_cast<size_t>(BLOCK::DIRT)].spr);
             block.setPosition(scr_coord);
 
             camera.canvas->draw(block);
@@ -78,25 +80,20 @@ void WorldStorage::draw_world(Comps::Camera& camera) {
     camera.drawable->setTexture(done, true);
 }
 
-void Misc::load_res(WorldStorage& ws) {
-    auto& bs = ws.get_storage_of_component<BlockStorage>();
-    auto& sample = bs.data_at(0);
-
-    sf::Texture dirt;
-    if (!dirt.loadFromFile("res\\texture\\block\\dirt.png"))
+void Misc::load_block_sprites(SpriteManager& blocks) {
+    sf::Texture dirt_txtr;
+    if (!dirt_txtr.loadFromFile("res\\texture\\block\\dirt.png"))
         return;
-    dirt.setSmooth(false);
+    dirt_txtr.setSmooth(false);
 
     Vector2f scale{
-        K::BLOCK_S / dirt.getSize().x,
-        K::BLOCK_S / dirt.getSize().y
+        K::BLOCK_S / dirt_txtr.getSize().x,
+        K::BLOCK_S / dirt_txtr.getSize().y
     };
 
-    auto [tex_it, _] =
-        sample.textures.emplace(BLOCK::DIRT, std::move(dirt));
+    blocks.arr[static_cast<size_t>(BLOCK::DIRT)].txtr = std::move(dirt_txtr);
 
-    sf::Sprite spr(tex_it->second);
-    spr.setScale(scale);
-
-    sample.sprites.emplace(BLOCK::DIRT, std::move(spr));
+    sf::Sprite dirt_spr(blocks.arr[static_cast<size_t>(BLOCK::DIRT)].txtr);
+    dirt_spr.setScale(scale);
+    blocks.arr[static_cast<size_t>(BLOCK::DIRT)].spr = std::make_unique<sf::Sprite>(std::move(dirt_spr));
 }
