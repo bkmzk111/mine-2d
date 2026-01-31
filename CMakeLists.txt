@@ -27,7 +27,8 @@ add_executable(
 add_library(
     LIB 
     SHARED
-    src/lib/engine.cpp
+    src/lib/storage.cpp
+    src/lib/system.cpp
 )
 
 

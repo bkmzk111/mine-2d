@@ -1,5 +1,6 @@
 
-#include <engine.hpp>
+#include <storage.hpp>
+#include <system.hpp>
 
 int main(void) {
 
@@ -18,19 +19,20 @@ int main(void) {
         .with<Comps::Camera>();
     
     auto sprite_holder = world.create_entity()
-        .with<Comps::SpriteManager>();
+        .with<Comps::VisualManager>();
     
     std::vector<EntityBuilder> chunk_holders;
         chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
         chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
-    world.generate_world();
+    System::gen_visible_chunks(world);
 
-    auto& block_sprites = world.get<Comps::SpriteManager>(sprite_holder);
+    auto& block_sprites = world.get<Comps::VisualManager>(sprite_holder);
     auto& main_camera   = world.get<Comps::Camera>(player);
 
-    Misc::load_block_sprites(block_sprites);
-    
+    world.load_block_sprites(block_sprites);
     world.prepare_for_loop();
+    
+    System::regen_chunks_on_canvas(world, main_camera, block_sprites);
     while (window.isOpen()) {
         while(const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
@@ -38,8 +40,7 @@ int main(void) {
         }
         window.clear(sf::Color::Transparent);
 
-        world.apply_tick();
-        world.draw_world(main_camera, block_sprites);
+        System::apply_tick(world);
 
         window.draw(*main_camera.drawable);
         window.display();

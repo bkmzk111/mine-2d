@@ -22,6 +22,7 @@ using Vector2u = sf::Vector2u;
 enum class BLOCK : uint16_t {
     AIR,
     DIRT,
+    GRASS,
     COUNT
 };
 
@@ -43,26 +44,17 @@ class PackedStorage {
         PackedStorage(PackedStorage&&) = default;
         PackedStorage& operator=(PackedStorage&&) = default;
 
-        inline bool    has_entity(Entity e)   const { return lookup.contains(e); }
-        inline T&      data_of   (Entity e)         { return data[lookup[e]]; }
-        inline T&      data_at   (size_t i)         { return data[i]; }
-        inline Entity& entity_of (const T& c)       { return entities[&c - data.data()]; }
-        inline Entity& entity_at (size_t i)         { return entities[i]; }
-        inline size_t  data_size ()           const { return data.size(); }
-        inline auto    data_begin()                 { return data.begin(); }
-        inline auto    data_end  ()                 { return data.end(); }
+        bool    has_entity(Entity e) const;
+        T&      data_of   (Entity e);       
+        T&      data_at   (size_t i);
+        Entity& entity_of (const T& c);
+        Entity& entity_at (size_t i);
+        size_t  data_size () const;
+        auto    data_begin();
+        auto    data_end  ();
 
         template<typename... Args>
-        inline T& emplace(Entity e, Args&&... args) {
-            if (this->has_entity(e)) 
-                return data_of(e);
-            
-            size_t index = data.size();
-            data.emplace_back(std::forward<Args>(args)...);
-            entities.push_back(e);
-            lookup[e] = index;
-            return data.back();
-        }
+        T& emplace(Entity e, Args&&... args);
 };
 
 namespace Comps {
@@ -87,12 +79,9 @@ namespace Comps {
     };
     struct VisualManager {
         sf::Texture atlas;
-        sf::VertexArray va;
         std::array<sf::IntRect, static_cast<size_t>(BLOCK::COUNT)> visuals;
 
-        VisualManager() {
-            va.setPrimitiveType(sf::PrimitiveType::Triangles);
-        };
+        VisualManager() = default;
     };
 };
 
@@ -120,30 +109,14 @@ class LIB_API WorldStorage {
         WorldStorage& operator=(WorldStorage&&) = default;
 
         template<WorldComponent T>
-        inline PackedStorage<T>& get_storage_of_component() {
-            if constexpr (std::is_same_v<T, Comps::Transform>)
-                return transforms;
-            if constexpr (std::is_same_v<T, Comps::Velocity>)
-                return velocities;
-            if constexpr (std::is_same_v<T, Comps::Camera>)
-                return cameras;
-            if constexpr (std::is_same_v<T, Comps::BlockStorage>)
-                return chunks;
-            if constexpr (std::is_same_v<T, Comps::VisualManager>)
-                return sprites;
-        }
+        PackedStorage<T>& get_storage_of_component();
 
         template<WorldComponent T>
-        inline T& get(Entity id) { 
-            return get_storage_of_component<T>().data_of(id);
-        }
+        T& get(Entity id);
 
         EntityBuilder create_entity();
-
-        void generate_world();
         void prepare_for_loop();
-        void apply_tick();
-        void draw_world(Comps::Camera& camera, Comps::VisualManager& blocks);
+        void load_block_sprites(Comps::VisualManager& blocks);
 };
 
 class LIB_API EntityBuilder {
@@ -154,17 +127,9 @@ class LIB_API EntityBuilder {
         EntityBuilder(WorldStorage& world, Entity n) : ws(world), id(n) {};
         
         template<WorldComponent T, typename... Args>
-        inline EntityBuilder& with(Args... args) {
-            ws.get_storage_of_component<T>().emplace(id, T{std::forward<Args>(args)...});
-            return *this;
-        }
+        EntityBuilder& with(Args... args);
+
         inline operator Entity() { return id; }
 };
 
-namespace Misc {
-    LIB_API void load_block_sprites(Comps::VisualManager& blocks);
-
-    inline LIB_API Vector2f to_scr(Vector2f coords) {
-        return Vector2f{ coords.x + K::WIN_SIZE.x / 2.0f, K::WIN_SIZE.y / 2.0f - coords.y }; 
-    }
-};
+#include "../src/lib/storage.tpp"
