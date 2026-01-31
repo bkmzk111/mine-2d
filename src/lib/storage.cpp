@@ -13,7 +13,6 @@ void WorldStorage::prepare_for_loop() {
         camera.canvas->clear(sf::Color::Transparent);
     }
 }
-
 void WorldStorage::load_block_sprites(VisualManager& blocks) {
     sf::Texture atlas;
     if (!atlas.loadFromFile("res\\texture\\block_list.png"))

@@ -5,6 +5,7 @@ namespace System {
     void LIB_API apply_tick(WorldStorage& ws);
     void LIB_API gen_visible_chunks(WorldStorage& ws);
     void LIB_API regen_chunks_on_canvas(WorldStorage& ws, Comps::Camera& camera, Comps::VisualManager& blocks);
+    //TODO: Add Perlin Noise generation
 };  
 
 namespace Misc {    
