@@ -20,6 +20,6 @@ void WorldStorage::load_block_sprites(VisualManager& blocks) {
         throw std::runtime_error("Failed to load block_list.png");
     atlas.setSmooth(false);
     blocks.atlas = std::move(atlas);
-    blocks.visuals[static_cast<int>(BLOCK::DIRT)]  = {{0,0}, {16,16}};
-    blocks.visuals[static_cast<int>(BLOCK::GRASS)] = {{16,0},{16,16}};
+    for (int i = 1; i < static_cast<int>(BLOCK::COUNT); ++i)
+        blocks.visuals[i] = {{16 * (i-1), 0}, {16,16}};
 }
