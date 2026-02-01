@@ -34,7 +34,8 @@ void System::gen_visible_chunks(WorldStorage& ws) {
         float heightmap[K::CHUNK_W];
         for (size_t i = 0; i < K::CHUNK_W; ++i) {
             float val = float(it->perlin.GetValue(double(transform.pos.x + i)*0.05, 0.0, 0.0));
-            heightmap[i] = val;
+            val = (val+1.0f) * 0.5f;
+            heightmap[i] = static_cast<int>(val * (K::CHUNK_H - 1));
         }
 
         for (auto& h : heightmap)
