@@ -33,9 +33,8 @@ void System::gen_visible_chunks(WorldStorage& ws) {
 
         float heightmap[K::CHUNK_W];
         for (size_t i = 0; i < K::CHUNK_W; ++i) {
-            float val = float(it->perlin.GetValue(double(transform.pos.x + i)*0.1, 0.0, 0.0));
-            val = (val+1.0f) * 0.5f;
-            heightmap[i] = static_cast<int>(val * (K::CHUNK_H - 1));
+            float val = float(it->perlin.GetValue(double(transform.pos.x + i)*0.05, 0.0, 0.0));
+            heightmap[i] = val;
         }
 
         for (auto& h : heightmap)
@@ -43,18 +42,21 @@ void System::gen_visible_chunks(WorldStorage& ws) {
         std::cout << std::endl;
 
         for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
-            int y = i / K::CHUNK_W;
             int x = i % K::CHUNK_W;
 
-            float stone_depth = compute_depth(x, y, heightmap[x]);
-            if (y < heightmap[x])
-                it->block_storage[y][x] = BLOCK::AIR;
-            else if (y == heightmap[x])
-                it->block_storage[y][x] = BLOCK::GRASS;
-            else if (y - heightmap[x] < stone_depth)
-                it->block_storage[y][x] = BLOCK::DIRT;
-            else 
-                it->block_storage[y][x] = BLOCK::STONE;
+            int array_y = i / K::CHUNK_W;
+            int world_y = (K::CHUNK_H - 1) - array_y;
+
+            float stone_depth = compute_depth(x, world_y, heightmap[x]);
+
+            if (world_y > heightmap[x])
+                it->block_storage[array_y][x] = BLOCK::AIR;
+            else if (world_y == heightmap[x])
+                it->block_storage[array_y][x] = BLOCK::GRASS;
+            else if (heightmap[x] - world_y < stone_depth)
+                it->block_storage[array_y][x] = BLOCK::DIRT;
+            else
+                it->block_storage[array_y][x] = BLOCK::STONE;
         }
     }
 }
