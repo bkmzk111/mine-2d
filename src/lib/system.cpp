@@ -22,7 +22,6 @@ void System::gen_visible_chunks(WorldStorage& ws) {
     auto& chunks = ws.get_storage_of_component<Comps::ChunkGenerator>();
     auto& transforms = ws.get_storage_of_component<Comps::Transform>();
 
-
     for (auto it = chunks.data_begin(); it != chunks.data_end(); ++it) {
         auto& transform = transforms.data_of(chunks.entity_of(*it));
 
@@ -43,20 +42,20 @@ void System::gen_visible_chunks(WorldStorage& ws) {
             std::cout << h << ", ";
         std::cout << std::endl;
 
-        for (size_t x = 0; x < K::CHUNK_W; ++x)
-            for (size_t y = 0; y < K::CHUNK_H; ++y) {
+        for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
+            int y = i / K::CHUNK_W;
+            int x = i % K::CHUNK_W;
 
-                float stone_depth = compute_depth(x, y, heightmap[x]);
-
-                if (y < heightmap[x])
-                    it->block_storage[y][x] = BLOCK::AIR;
-                else if (y == heightmap[x])
-                    it->block_storage[y][x] = BLOCK::GRASS;
-                else if (y - heightmap[x] < stone_depth)
-                    it->block_storage[y][x] = BLOCK::DIRT;
-                else 
-                    it->block_storage[y][x] = BLOCK::STONE;
-            }
+            float stone_depth = compute_depth(x, y, heightmap[x]);
+            if (y < heightmap[x])
+                it->block_storage[y][x] = BLOCK::AIR;
+            else if (y == heightmap[x])
+                it->block_storage[y][x] = BLOCK::GRASS;
+            else if (y - heightmap[x] < stone_depth)
+                it->block_storage[y][x] = BLOCK::DIRT;
+            else 
+                it->block_storage[y][x] = BLOCK::STONE;
+        }
     }
 }
 void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualManager& blocks) {
@@ -75,7 +74,8 @@ void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualM
     int chunk_index = 0;
 
     for (auto it = chunks.data_begin(); it != chunks.data_end(); ++it, ++chunk_index) {
-        Vector2f chunk_offset{chunk_index * K::CHUNK_W * K::BLOCK_S, 0};
+        auto& chunk_ts = transforms.data_of(chunks.entity_of(*it));
+        Vector2f chunk_world = chunk_ts.pos * K::BLOCK_S;
 
         for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
             int y = i / K::CHUNK_W;
@@ -87,10 +87,12 @@ void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualM
 
             sf::IntRect uv = blocks.visuals[static_cast<size_t>(block)];
 
-            Vector2f w_coord{x*K::BLOCK_S, -y*K::BLOCK_S};
-            w_coord += chunk_offset;
-            Vector2f rel = w_coord - cam_pos.pos;
-            Vector2f s_coord = Misc::to_scr(rel);
+            Vector2f block_local{
+                x * K::BLOCK_S,
+                -y * K::BLOCK_S
+            };
+            Vector2f w_coord = chunk_world + block_local;
+            Vector2f s_coord = Misc::to_scr(w_coord - cam_pos.pos);
 
             va[block_index+0].position = s_coord;
             va[block_index+1].position = {s_coord.x+K::BLOCK_S, s_coord.y};
@@ -114,7 +116,7 @@ void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualM
     sf::RenderStates states;
     states.texture = &blocks.atlas;
 
-    camera.canvas->clear(sf::Color(107, 213, 242));
+    camera.canvas->clear(sf::Color(113, 196, 245));
     camera.canvas->draw(va, states);
     camera.canvas->display();
 
