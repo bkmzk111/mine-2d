@@ -9,7 +9,10 @@ namespace System {
 };  
 
 namespace Misc {    
-    inline LIB_API Vector2f to_scr(Vector2f coords) {
-        return Vector2f{ coords.x + K::WIN_SIZE.x / 2.0f, K::WIN_SIZE.y / 2.0f - coords.y }; 
+    inline LIB_API Vector2f to_scr(Vector2f world_pos, Vector2f cam_pos) {
+        return {
+            world_pos.x - cam_pos.x,
+            K::WIN_SIZE.y - (world_pos.y - cam_pos.y)
+        };
     }
 };

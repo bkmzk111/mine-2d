@@ -31,34 +31,25 @@ void System::gen_visible_chunks(WorldStorage& ws) {
             return depth;
         };
 
-        float heightmap[K::CHUNK_W];
-        for (size_t i = 0; i < K::CHUNK_W; ++i) {
-            float val = float(it->perlin.GetValue(double(transform.pos.x + i)*0.05, 0.0, 0.0));
-            val = (val+1.0f) * 0.5f;
-            heightmap[i] = static_cast<int>(val * (K::CHUNK_H - 1));
+        for (size_t x = 0; x < K::CHUNK_W; ++x) {
+            float val = float(it->perlin.GetValue(double(transform.pos.x + x) * 0.05, 0.0, 0.0));
+            val = (val + 1.0f) * 0.5f; 
+            it->heightmap[x] = static_cast<int>(val * (K::CHUNK_H - 1));
         }
 
-        for (auto& h : heightmap)
-            std::cout << h << ", ";
-        std::cout << std::endl;
+        for (int x = 0; x < K::CHUNK_W; ++x)
+            for (int y = 0; y < K::CHUNK_H; ++y) { 
+                float stone_depth = compute_depth(x, y, it->heightmap[x]);
 
-        for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
-            int x = i % K::CHUNK_W;
-
-            int array_y = i / K::CHUNK_W;
-            int world_y = (K::CHUNK_H - 1) - array_y;
-
-            float stone_depth = compute_depth(x, world_y, heightmap[x]);
-
-            if (world_y > heightmap[x])
-                it->block_storage[array_y][x] = BLOCK::AIR;
-            else if (world_y == heightmap[x])
-                it->block_storage[array_y][x] = BLOCK::GRASS;
-            else if (heightmap[x] - world_y < stone_depth)
-                it->block_storage[array_y][x] = BLOCK::DIRT;
-            else
-                it->block_storage[array_y][x] = BLOCK::STONE;
-        }
+                if (y > it->heightmap[x])
+                    it->block_storage[y][x] = BLOCK::AIR;
+                else if (y == it->heightmap[x])
+                    it->block_storage[y][x] = BLOCK::GRASS;
+                else if (it->heightmap[x] - y < stone_depth)
+                    it->block_storage[y][x] = BLOCK::DIRT;
+                else
+                    it->block_storage[y][x] = BLOCK::STONE;
+            }
     }
 }
 void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualManager& blocks) {
@@ -92,10 +83,10 @@ void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualM
 
             Vector2f block_local{
                 x * K::BLOCK_S,
-                -y * K::BLOCK_S
+                y * K::BLOCK_S
             };
             Vector2f w_coord = chunk_world + block_local;
-            Vector2f s_coord = Misc::to_scr(w_coord - cam_pos.pos);
+            Vector2f s_coord = Misc::to_scr(w_coord, cam_pos.pos);
 
             va[block_index+0].position = s_coord;
             va[block_index+1].position = {s_coord.x+K::BLOCK_S, s_coord.y};

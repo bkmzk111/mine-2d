@@ -21,7 +21,7 @@ int main(void) {
         perlin.SetLacunarity(1.5);
 
     auto player = world.create_entity()
-        .with<Comps::Transform>(500.0f, -300.0f)
+        .with<Comps::Transform>(0.0f, 0.0f)
         .with<Comps::Velocity>(0.0f, 0.0f)
         .with<Comps::Camera>();
     

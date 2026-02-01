@@ -83,6 +83,7 @@ namespace Comps {
     };
     struct ChunkGenerator {
             noise::module::Perlin perlin;
+            std::array<float, K::CHUNK_W> heightmap;
             std::array<std::array<BLOCK, K::CHUNK_W>, K::CHUNK_H> block_storage;
             ChunkGenerator(noise::module::Perlin p) : perlin(p) {};
     };
