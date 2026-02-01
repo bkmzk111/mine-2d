@@ -1,4 +1,5 @@
 #include "../include/system.hpp"
+#include <iostream>
 
 void System::apply_tick(WorldStorage& ws) {
     auto& transforms = ws.get_storage_of_component<Comps::Transform>();
@@ -18,22 +19,50 @@ void System::apply_tick(WorldStorage& ws) {
     }
 }
 void System::gen_visible_chunks(WorldStorage& ws) {
-    auto& chunks = ws.get_storage_of_component<Comps::BlockStorage>();
+    auto& chunks = ws.get_storage_of_component<Comps::ChunkGenerator>();
+    auto& transforms = ws.get_storage_of_component<Comps::Transform>();
 
-    for (size_t i = 0; i < chunks.data_size(); ++i) {
-        Comps::BlockStorage& chunk = chunks.data_at(i);
 
-        chunk.arr = {{
-            {BLOCK::GRASS, BLOCK::GRASS, BLOCK::GRASS, BLOCK::GRASS},
-            {BLOCK::DIRT, BLOCK::DIRT, BLOCK::DIRT, BLOCK::DIRT},
-            {BLOCK::DIRT, BLOCK::DIRT, BLOCK::DIRT, BLOCK::DIRT},
-        }};
+    for (auto it = chunks.data_begin(); it != chunks.data_end(); ++it) {
+        auto& transform = transforms.data_of(chunks.entity_of(*it));
+
+        auto compute_depth = [&](int x, int y, float h) -> float {
+            float depth = 6.0f + float(it->perlin.GetValue(x * 0.1, y * 0.1, 0.0) * 4.0);
+            depth -= (h > 10 ? 2 : 0);
+            return depth;
+        };
+
+        float heightmap[K::CHUNK_W];
+        for (size_t i = 0; i < K::CHUNK_W; ++i) {
+            float val = float(it->perlin.GetValue(double(transform.pos.x + i)*0.1, 0.0, 0.0));
+            val = (val+1.0f) * 0.5f;
+            heightmap[i] = static_cast<int>(val * (K::CHUNK_H - 1));
+        }
+
+        for (auto& h : heightmap)
+            std::cout << h << ", ";
+        std::cout << std::endl;
+
+        for (size_t x = 0; x < K::CHUNK_W; ++x)
+            for (size_t y = 0; y < K::CHUNK_H; ++y) {
+
+                float stone_depth = compute_depth(x, y, heightmap[x]);
+
+                if (y < heightmap[x])
+                    it->block_storage[y][x] = BLOCK::AIR;
+                else if (y == heightmap[x])
+                    it->block_storage[y][x] = BLOCK::GRASS;
+                else if (y - heightmap[x] < stone_depth)
+                    it->block_storage[y][x] = BLOCK::DIRT;
+                else 
+                    it->block_storage[y][x] = BLOCK::STONE;
+            }
     }
 }
-void System::regen_chunks_on_canvas(WorldStorage& ws, Comps::Camera& camera, Comps::VisualManager& blocks) {
+void System::draw_chunks(WorldStorage& ws, Comps::Camera& camera, Comps::VisualManager& blocks) {
     auto& cameras = ws.get_storage_of_component<Comps::Camera>();
     auto& transforms = ws.get_storage_of_component<Comps::Transform>();
-    auto& chunks = ws.get_storage_of_component<Comps::BlockStorage>();
+    auto& chunks = ws.get_storage_of_component<Comps::ChunkGenerator>();
 
     Entity cam_entity = cameras.entity_of(camera);
     Comps::Transform& cam_pos = transforms.data_of(cam_entity);
@@ -51,7 +80,7 @@ void System::regen_chunks_on_canvas(WorldStorage& ws, Comps::Camera& camera, Com
         for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
             int y = i / K::CHUNK_W;
             int x = i % K::CHUNK_W;
-            BLOCK block = it->arr[y][x];
+            BLOCK block = it->block_storage[y][x];
 
             if (block == BLOCK::AIR)
                 continue;
@@ -85,6 +114,7 @@ void System::regen_chunks_on_canvas(WorldStorage& ws, Comps::Camera& camera, Com
     sf::RenderStates states;
     states.texture = &blocks.atlas;
 
+    camera.canvas->clear(sf::Color(107, 213, 242));
     camera.canvas->draw(va, states);
     camera.canvas->display();
 

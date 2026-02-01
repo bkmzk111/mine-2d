@@ -13,6 +13,7 @@
 #include <memory> 
 #include <array>
 #include <SFML/Graphics.hpp> 
+#include <noise/noise.h>
 #include "consts.hpp" 
 
 using Entity = uint32_t;
@@ -23,10 +24,12 @@ enum class BLOCK : uint16_t {
     AIR,
     DIRT,
     GRASS,
+    STONE,
     COUNT
 };
 
 class EntityBuilder;
+namespace Comps { class ChunkGenerator; };
 class WorldStorage;
 
 template<typename T>
@@ -66,11 +69,6 @@ namespace Comps {
         Vector2f vel{};
         Velocity(float dx = 0, float dy = 0) : vel{dx, dy} {}
     };
-    struct BlockStorage {
-        std::array<std::array<BLOCK, K::CHUNK_W>, K::CHUNK_H> arr;
-
-        BlockStorage() = default;
-    };
     struct Camera {
         std::unique_ptr<sf::RenderTexture> canvas;
         std::unique_ptr<sf::Sprite> drawable;
@@ -83,6 +81,11 @@ namespace Comps {
 
         VisualManager() = default;
     };
+    struct ChunkGenerator {
+            noise::module::Perlin perlin;
+            std::array<std::array<BLOCK, K::CHUNK_W>, K::CHUNK_H> block_storage;
+            ChunkGenerator(noise::module::Perlin p) : perlin(p) {};
+    };
 };
 
 template<typename T>
@@ -90,16 +93,16 @@ concept WorldComponent =
     std::is_same_v<T, Comps::Transform> || 
     std::is_same_v<T, Comps::Velocity> ||
     std::is_same_v<T, Comps::Camera> ||
-    std::is_same_v<T, Comps::BlockStorage> ||
-    std::is_same_v<T, Comps::VisualManager>;
+    std::is_same_v<T, Comps::VisualManager> ||
+    std::is_same_v<T, Comps::ChunkGenerator>;
 
 class LIB_API WorldStorage {
     private:
         PackedStorage<Comps::Transform> transforms;
         PackedStorage<Comps::Velocity> velocities;
         PackedStorage<Comps::Camera> cameras;
-        PackedStorage<Comps::BlockStorage> chunks;
         PackedStorage<Comps::VisualManager> sprites;
+        PackedStorage<Comps::ChunkGenerator> chunks;
 
         Entity it;
     public:

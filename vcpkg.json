@@ -2,7 +2,11 @@
   "dependencies": [
     {
       "name": "sfml",
-      "features": ["window", "graphics"]
-    }
+      "features": [
+        "graphics",
+        "window"
+      ]
+    },
+    "libnoise"
   ]
 }

@@ -6,6 +6,7 @@ EntityBuilder WorldStorage::create_entity() {
     it+=1;
     return EntityBuilder{*this, it};
 }
+
 void WorldStorage::prepare_for_loop() {
     for (size_t i = 0; i < cameras.data_size(); ++i) {
         Comps::Camera& camera = cameras.data_at(i);

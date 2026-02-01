@@ -44,10 +44,10 @@ PackedStorage<T>& WorldStorage::get_storage_of_component() {
         return velocities;
     if constexpr (std::is_same_v<T, Comps::Camera>)
         return cameras;
-    if constexpr (std::is_same_v<T, Comps::BlockStorage>)
-        return chunks;
     if constexpr (std::is_same_v<T, Comps::VisualManager>)
         return sprites;
+    if constexpr (std::is_same_v<T, Comps::ChunkGenerator>)
+        return chunks;
 }
 template<WorldComponent T>
 T& WorldStorage::get(Entity id) { 

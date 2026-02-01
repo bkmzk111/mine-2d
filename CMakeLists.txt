@@ -19,6 +19,10 @@ find_package(
     Graphics Window Audio System 
     CONFIG REQUIRED
 )
+find_package(
+    unofficial-noise 
+    CONFIG REQUIRED
+)
 
 add_executable(
     GAME
@@ -33,12 +37,12 @@ add_library(
 
 
 target_link_libraries(
-    LIB PRIVATE 
+    LIB PUBLIC 
     SFML::Graphics SFML::Window SFML::Audio SFML::System
 )
 target_link_libraries(
-    GAME PRIVATE 
-    SFML::Graphics SFML::Window SFML::Audio SFML::System
+    LIB PUBLIC
+    unofficial::noise::noise
 )
 
 target_link_libraries(

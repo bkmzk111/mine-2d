@@ -13,8 +13,15 @@ int main(void) {
 
     WorldStorage world;
 
+    noise::module::Perlin perlin;
+        perlin.SetSeed(67);
+        perlin.SetFrequency(0.9);
+        perlin.SetOctaveCount(2);
+        perlin.SetPersistence(0.5);
+        perlin.SetLacunarity(1.5);
+
     auto player = world.create_entity()
-        .with<Comps::Transform>(0.0f, 0.0f)
+        .with<Comps::Transform>(500.0f, -300.0f)
         .with<Comps::Velocity>(0.0f, 0.0f)
         .with<Comps::Camera>();
     
@@ -22,8 +29,12 @@ int main(void) {
         .with<Comps::VisualManager>();
     
     std::vector<EntityBuilder> chunk_holders;
-        chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
-        chunk_holders.push_back(world.create_entity().with<Comps::BlockStorage>());
+        chunk_holders.push_back(world.create_entity().with<Comps::ChunkGenerator>(perlin)
+                                                     .with<Comps::Transform>(0.0f, 0.0f));
+        chunk_holders.push_back(world.create_entity().with<Comps::ChunkGenerator>(perlin)
+                                                     .with<Comps::Transform>(float(K::CHUNK_W), 0.0f));
+        chunk_holders.push_back(world.create_entity().with<Comps::ChunkGenerator>(perlin)
+                                                     .with<Comps::Transform>(float(K::CHUNK_W*2), 0.0f));
     System::gen_visible_chunks(world);
 
     auto& block_sprites = world.get<Comps::VisualManager>(sprite_holder);
@@ -32,7 +43,7 @@ int main(void) {
     world.load_block_sprites(block_sprites);
     world.prepare_for_loop();
     
-    System::regen_chunks_on_canvas(world, main_camera, block_sprites);
+    System::draw_chunks(world, main_camera, block_sprites);
     while (window.isOpen()) {
         while(const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())

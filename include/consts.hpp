@@ -4,9 +4,9 @@
 namespace K {
     constexpr sf::Vector2u WIN_SIZE = {1000, 650};
 
-    constexpr uint32_t CHUNK_W = 4;
-    constexpr uint32_t CHUNK_H = 3;
-    constexpr float    BLOCK_S = 50.0f;
+    constexpr uint32_t CHUNK_W = 16;
+    constexpr uint32_t CHUNK_H = 30;
+    constexpr float    BLOCK_S = 25.0f;
     constexpr int      BLOCK_LIST_TILE_S = 16;
 };
 
