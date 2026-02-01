@@ -1,5 +1,4 @@
 #include "../include/system.hpp"
-#include <iostream>
 
 void System::apply_tick(WorldStorage& ws) {
     auto& transforms = ws.get_storage_of_component<Comps::Transform>();
