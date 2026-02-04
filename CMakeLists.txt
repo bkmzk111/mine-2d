@@ -15,12 +15,15 @@ project(GAME)
 project(LIB)
 
 find_package(
-    SFML COMPONENTS
-    Graphics Window Audio System 
+    SFML COMPONENTS Graphics Window System 
     CONFIG REQUIRED
 )
 find_package(
     unofficial-noise 
+    CONFIG REQUIRED
+)
+find_package(
+    box2d 
     CONFIG REQUIRED
 )
 
@@ -35,14 +38,11 @@ add_library(
     src/lib/system.cpp
 )
 
-
 target_link_libraries(
     LIB PUBLIC 
-    SFML::Graphics SFML::Window SFML::Audio SFML::System
-)
-target_link_libraries(
-    LIB PUBLIC
+    SFML::Graphics SFML::Window SFML::System
     unofficial::noise::noise
+    box2d::box2d
 )
 
 target_link_libraries(

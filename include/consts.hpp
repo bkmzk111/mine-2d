@@ -6,7 +6,7 @@ namespace K {
 
     constexpr uint32_t CHUNK_W = 16;
     constexpr uint32_t CHUNK_H = 30;
-    constexpr float    BLOCK_S = 25.0f;
+    constexpr float    BLOCK_S = 32.0f;
     constexpr int      BLOCK_LIST_TILE_S = 16;
 };
 

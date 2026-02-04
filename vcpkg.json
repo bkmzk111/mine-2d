@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "libnoise",
     {
       "name": "sfml",
       "features": [
@@ -7,6 +8,12 @@
         "window"
       ]
     },
-    "libnoise"
+    "box2d"
+  ],
+  "overrides": [
+    {
+      "name": "box2d",
+      "version": "2.4.1#3"
+    }
   ]
 }

@@ -14,11 +14,10 @@
 #include <array>
 #include <SFML/Graphics.hpp> 
 #include <noise/noise.h>
+#include <box2d/box2d.h>
 #include "consts.hpp" 
 
 using Entity = uint32_t;
-using Vector2f = sf::Vector2f;
-using Vector2u = sf::Vector2u;
 
 enum class BLOCK : uint16_t {
     AIR,
@@ -62,14 +61,12 @@ class PackedStorage {
 
 namespace Comps {
     struct LIB_API Transform { 
-        Vector2f pos{};
+        sf::Vector2f pos{};
+
         Transform(float x = 0, float y = 0) : pos{x, y} {}
     };
-    struct LIB_API Velocity { 
-        Vector2f vel{};
-        Velocity(float dx = 0, float dy = 0) : vel{dx, dy} {}
-    };
     struct Camera {
+        sf::View view;
         std::unique_ptr<sf::RenderTexture> canvas;
         std::unique_ptr<sf::Sprite> drawable;
 
@@ -81,33 +78,47 @@ namespace Comps {
 
         VisualManager() = default;
     };
-    struct ChunkGenerator {
+    struct LIB_API ChunkGenerator {
         noise::module::Perlin perlin;
         std::array<float, K::CHUNK_W> heightmap;
         std::array<std::array<BLOCK, K::CHUNK_W>, K::CHUNK_H> block_storage;
+
         ChunkGenerator(noise::module::Perlin p) : perlin(p) {};
     };
+    struct LIB_API PhysicsStatic {
+        b2Body* p_body = nullptr;
+
+        PhysicsStatic() = default;
+    };
+    struct LIB_API PhysicsEntity {
+        b2Body* p_body = nullptr;
+
+        PhysicsEntity(b2World* world, b2Vec2 box_shape, b2Vec2 init_pos);
+    };  
 };
 
 template<typename T>
 concept WorldComponent = 
     std::is_same_v<T, Comps::Transform> || 
-    std::is_same_v<T, Comps::Velocity> ||
     std::is_same_v<T, Comps::Camera> ||
     std::is_same_v<T, Comps::VisualManager> ||
-    std::is_same_v<T, Comps::ChunkGenerator>;
+    std::is_same_v<T, Comps::ChunkGenerator> ||
+    std::is_same_v<T, Comps::PhysicsEntity> ||
+    std::is_same_v<T, Comps::PhysicsStatic>;
 
 class LIB_API WorldStorage {
     private:
         PackedStorage<Comps::Transform> transforms;
-        PackedStorage<Comps::Velocity> velocities;
         PackedStorage<Comps::Camera> cameras;
         PackedStorage<Comps::VisualManager> sprites;
         PackedStorage<Comps::ChunkGenerator> chunks;
+        PackedStorage<Comps::PhysicsStatic> p_grounds;
+        PackedStorage<Comps::PhysicsEntity> p_dyna_bodies;
 
-        Entity it;
+        Entity it = 0;
+        std::unique_ptr<b2World> physics_world;
     public:
-        WorldStorage() = default;
+        WorldStorage() { physics_world = std::make_unique<b2World>(b2Vec2{0.0f, -9.8f}); };
 
         WorldStorage(WorldStorage&&) = default;
         WorldStorage& operator=(WorldStorage&&) = default;
@@ -115,11 +126,13 @@ class LIB_API WorldStorage {
         template<WorldComponent T>
         PackedStorage<T>& get_storage_of_component();
 
+        b2World* p_world();
+
         template<WorldComponent T>
         T& get(Entity id);
 
         EntityBuilder create_entity();
-        void prepare_for_loop();
+        void prepare();
         void load_block_sprites(Comps::VisualManager& blocks);
 };
 
@@ -128,12 +141,13 @@ class LIB_API EntityBuilder {
         WorldStorage& ws;
         Entity id;
     public:
-        EntityBuilder(WorldStorage& world, Entity n) : ws(world), id(n) {};
+        EntityBuilder(WorldStorage& world, Entity n) : ws(world), id(n) {}
         
         template<WorldComponent T, typename... Args>
         EntityBuilder& with(Args... args);
 
         inline operator Entity() { return id; }
 };
+
 
 #include "../src/lib/storage.tpp"
