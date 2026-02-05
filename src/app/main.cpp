@@ -21,14 +21,14 @@ int main(void) {
     WorldStorage world;
 
     auto player = world.create_entity()
-        .with<Comps::Transform>(5.0f, 25.0f)
+        .with<Comps::Transform>(6.0f, 25.0f)
         .with<Comps::Camera>()
-        .with<Comps::PhysicsEntity>(world.p_world(), b2Vec2{1.0f, 2.0f}, b2Vec2{5.0f, 25.0f});
+        .with<Comps::PhysicsEntity>(world.p_world(), b2Vec2{1.0f, 2.0f}, b2Vec2{6.0f, 25.0f});
         auto& main_camera = world.get<Comps::Camera>(player);
     
     auto sprite_holder = world.create_entity()
-        .with<Comps::VisualManager>();
-        auto& block_sprites = world.get<Comps::VisualManager>(sprite_holder);
+        .with<Comps::VisualManager<EnumData::BLOCKS>>();
+        auto& block_sprites = world.get<Comps::VisualManager<EnumData::BLOCKS>>(sprite_holder);
     
     std::vector<EntityBuilder> chunk_holders;
         for (int i = 0; i < 5; ++i)
@@ -42,6 +42,8 @@ int main(void) {
     System::gen_visible_chunks(world);
     System::gen_chunk_hitboxes(world);
 
+    auto [va, states] = System::draw_chunks_va(world, sprite_holder);
+
     while (window.isOpen()) {
         while(const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
@@ -50,7 +52,19 @@ int main(void) {
         window.clear(sf::Color::Transparent);
 
         System::apply_tick(world);
-        System::draw_chunks(world, player, sprite_holder);
+
+        main_camera.view.setSize(sf::Vector2f{K::WIN_SIZE.x, -static_cast<float>(K::WIN_SIZE.y)});
+        main_camera.view.setCenter(world.get<Comps::Transform>(player).pos);
+        main_camera.canvas->setView(main_camera.view);
+
+        main_camera.canvas->clear(sf::Color(113, 196, 245));
+        main_camera.canvas->draw(va, states);
+        main_camera.canvas->display();
+
+        const sf::Texture& done = main_camera.canvas->getTexture();
+        if (!main_camera.drawable)
+            main_camera.drawable = std::make_unique<sf::Sprite>(done);
+        main_camera.drawable->setTexture(done, true);
 
         window.draw(*main_camera.drawable);
         window.display();

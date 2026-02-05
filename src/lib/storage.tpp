@@ -35,8 +35,8 @@ PackedStorage<T>& WorldStorage::get_storage_of_component() {
         return transforms;
     if constexpr (std::is_same_v<T, Comps::Camera>)
         return cameras;
-    if constexpr (std::is_same_v<T, Comps::VisualManager>)
-        return sprites;
+    if constexpr (std::is_same_v<T, Comps::VisualManager<EnumData::BLOCKS>>)
+        return block_sprites;
     if constexpr (std::is_same_v<T, Comps::ChunkGenerator>)
         return chunks;
     if constexpr (std::is_same_v<T, Comps::PhysicsStatic>)

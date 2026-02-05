@@ -88,33 +88,27 @@ void System::gen_visible_chunks(WorldStorage& ws) {
                 float stone_depth = compute_depth(x, y, it->heightmap[x]);
 
                 if (y > it->heightmap[x])
-                    it->block_storage[y][x] = BLOCK::AIR;
+                    it->block_storage[y][x] = EnumData::BLOCKS::AIR;
                 else if (y == it->heightmap[x])
-                    it->block_storage[y][x] = BLOCK::GRASS;
+                    it->block_storage[y][x] = EnumData::BLOCKS::GRASS;
                 else if (it->heightmap[x] - y < stone_depth)
-                    it->block_storage[y][x] = BLOCK::DIRT;
+                    it->block_storage[y][x] = EnumData::BLOCKS::DIRT;
                 else
-                    it->block_storage[y][x] = BLOCK::STONE;
+                    it->block_storage[y][x] = EnumData::BLOCKS::STONE;
             }
     }
 }
-void System::draw_chunks(WorldStorage& ws, Entity player, Entity block_visuals) {
+std::pair<sf::VertexArray, sf::RenderStates> System::draw_chunks_va(WorldStorage& ws, Entity block_visuals) {
     auto& cameras = ws.get_storage_of_component<Comps::Camera>();
     auto& transforms = ws.get_storage_of_component<Comps::Transform>();
     auto& chunks = ws.get_storage_of_component<Comps::ChunkGenerator>();
-    auto& visuals = ws.get_storage_of_component<Comps::VisualManager>();
+    auto& visuals = ws.get_storage_of_component<Comps::VisualManager<EnumData::BLOCKS>>();
 
-    Comps::Camera& main_camera = cameras.data_of(player);
-    Comps::Transform& cam_pos = transforms.data_of(player);
-    Comps::VisualManager& blocks = visuals.data_of(block_visuals);
+    Comps::VisualManager<EnumData::BLOCKS>& blocks = visuals.data_of(block_visuals);
 
     sf::VertexArray va;
     va.resize(chunks.data_size() * K::CHUNK_W * K::CHUNK_H * 6);
     va.setPrimitiveType(sf::PrimitiveType::Triangles);
-
-    main_camera.view.setSize(sf::Vector2f{K::WIN_SIZE.x, -static_cast<float>(K::WIN_SIZE.y)});
-    main_camera.view.setCenter(cam_pos.pos);
-    main_camera.canvas->setView(main_camera.view);
 
     int block_index = 0;
     int chunk_index = 0;
@@ -126,9 +120,9 @@ void System::draw_chunks(WorldStorage& ws, Entity player, Entity block_visuals) 
         for (int i = 0; i < K::CHUNK_W * K::CHUNK_H; ++i) {
             int y = i / K::CHUNK_W;
             int x = i % K::CHUNK_W;
-            BLOCK block = it->block_storage[y][x];
+            EnumData::BLOCKS block = it->block_storage[y][x];
 
-            if (block == BLOCK::AIR)
+            if (block == EnumData::BLOCKS::AIR)
                 continue;
 
             sf::IntRect uv = blocks.visuals[static_cast<size_t>(block)];
@@ -160,12 +154,5 @@ void System::draw_chunks(WorldStorage& ws, Entity player, Entity block_visuals) 
     sf::RenderStates states;
     states.texture = &blocks.atlas;
 
-    main_camera.canvas->clear(sf::Color(113, 196, 245));
-    main_camera.canvas->draw(va, states);
-    main_camera.canvas->display();
-
-    const sf::Texture& done = main_camera.canvas->getTexture();
-    if (!main_camera.drawable)
-        main_camera.drawable = std::make_unique<sf::Sprite>(done);
-    main_camera.drawable->setTexture(done, true);
+    return {va, states};
 }

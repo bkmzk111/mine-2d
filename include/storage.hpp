@@ -19,12 +19,18 @@
 
 using Entity = uint32_t;
 
-enum class BLOCK : uint16_t {
-    AIR,
-    DIRT,
-    GRASS,
-    STONE,
-    COUNT
+namespace EnumData {
+    enum class BLOCKS : uint16_t {
+        AIR,
+        DIRT,
+        GRASS,
+        STONE,
+        COUNT
+    };
+    enum class ENTITIES : uint16_t {
+        PLAYER,
+        COUNT
+    };
 };
 
 class EntityBuilder;
@@ -72,16 +78,17 @@ namespace Comps {
 
         Camera() = default;
     };
+    template<typename T>
     struct VisualManager {
         sf::Texture atlas;
-        std::array<sf::IntRect, static_cast<size_t>(BLOCK::COUNT)> visuals;
+        std::array<sf::IntRect, static_cast<size_t>(T::COUNT)> visuals;
 
         VisualManager() = default;
     };
     struct LIB_API ChunkGenerator {
         noise::module::Perlin perlin;
         std::array<float, K::CHUNK_W> heightmap;
-        std::array<std::array<BLOCK, K::CHUNK_W>, K::CHUNK_H> block_storage;
+        std::array<std::array<EnumData::BLOCKS, K::CHUNK_W>, K::CHUNK_H> block_storage;
 
         ChunkGenerator(noise::module::Perlin p) : perlin(p) {};
     };
@@ -101,7 +108,7 @@ template<typename T>
 concept WorldComponent = 
     std::is_same_v<T, Comps::Transform> || 
     std::is_same_v<T, Comps::Camera> ||
-    std::is_same_v<T, Comps::VisualManager> ||
+    std::is_same_v<T, Comps::VisualManager<EnumData::BLOCKS>> ||
     std::is_same_v<T, Comps::ChunkGenerator> ||
     std::is_same_v<T, Comps::PhysicsEntity> ||
     std::is_same_v<T, Comps::PhysicsStatic>;
@@ -110,7 +117,7 @@ class LIB_API WorldStorage {
     private:
         PackedStorage<Comps::Transform> transforms;
         PackedStorage<Comps::Camera> cameras;
-        PackedStorage<Comps::VisualManager> sprites;
+        PackedStorage<Comps::VisualManager<EnumData::BLOCKS>> block_sprites;
         PackedStorage<Comps::ChunkGenerator> chunks;
         PackedStorage<Comps::PhysicsStatic> p_grounds;
         PackedStorage<Comps::PhysicsEntity> p_dyna_bodies;
@@ -133,7 +140,7 @@ class LIB_API WorldStorage {
 
         EntityBuilder create_entity();
         void prepare();
-        void load_block_sprites(Comps::VisualManager& blocks);
+        void load_block_sprites(Comps::VisualManager<EnumData::BLOCKS>& blocks);
 };
 
 class LIB_API EntityBuilder {
