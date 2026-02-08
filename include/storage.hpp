@@ -34,7 +34,6 @@ namespace EnumData {
 };
 
 class EntityBuilder;
-namespace Comps { class ChunkGenerator; };
 class WorldStorage;
 
 template<typename T>

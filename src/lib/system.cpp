@@ -34,7 +34,7 @@ void System::gen_chunk_hitboxes(WorldStorage& ws) {
             int start_x = x;
             while (x < K::CHUNK_W && it->heightmap[x] == h)
                 ++x;
-            int width = x - start_x;
+            int width = x - start_x - 1;
             segments.push_back(HeightSegment{start_x, width, h});
         }
 
@@ -56,7 +56,7 @@ void System::gen_chunk_hitboxes(WorldStorage& ws) {
 
             b2FixtureDef fixDef;
             fixDef.shape = &shape;
-            fixDef.friction = 0.6f;
+            fixDef.friction = 0.5f;
 
             grnd->CreateFixture(&fixDef);
         }
