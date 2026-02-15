@@ -1,5 +1,5 @@
 ## Mine 2D
-#### *The project is in active development. Release date not yet planned!*
+# **The project is in active development. Release date not yet planned!**
 
 
 ### 1st release progress

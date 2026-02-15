@@ -1,8 +1,4 @@
 
-#include "engine/storage.hpp"
-#include "game/consts.hpp"
-#include "game/storage.hpp"
-#include <SFML/Graphics/PrimitiveType.hpp>
 #include <engine/engine.hpp>
 #include <game/game.hpp>
 
