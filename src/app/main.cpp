@@ -1,97 +1,87 @@
 
-#include <storage.hpp>
-#include <system.hpp>
-#include <iostream>
+#include "engine/storage.hpp"
+#include "game/consts.hpp"
+#include "game/storage.hpp"
+#include <SFML/Graphics/PrimitiveType.hpp>
+#include <engine/engine.hpp>
+#include <game/game.hpp>
+
+using namespace Engine;
+using namespace Game;
 
 int main(void) {
-    noise::module::Perlin perlin_noise;
-        perlin_noise.SetSeed(INT_MIN);
-        perlin_noise.SetFrequency(0.9);
-        perlin_noise.SetOctaveCount(2);
-        perlin_noise.SetPersistence(0.5);
-        perlin_noise.SetLacunarity(1.5);
 
     sf::RenderWindow window(
-        sf::VideoMode(K::WIN_SIZE), 
+        sf::VideoMode(Engine::K::win_size), 
         "MINE2D", 
         sf::Style::Close
     );
     window.setVerticalSyncEnabled(true);
 
-    WorldStorage world;
+    noise::module::Perlin perlin_noise;
+        perlin_noise.SetSeed(67);
+        perlin_noise.SetFrequency(0.9);
+        perlin_noise.SetOctaveCount(2);
+        perlin_noise.SetPersistence(0.5);
+        perlin_noise.SetLacunarity(1.5);
+
+    World world;
 
     auto player = world.create_entity()
-        .with<Comps::Transform>(6.0f, 25.0f)
-        .with<Comps::Camera>()
-        .with<Comps::PhysicsEntity>(world.p_world(), b2Vec2{1.0f, 2.0f}, b2Vec2{6.0f, 25.0f});
-        auto& main_camera = world.get<Comps::Camera>(player);
-        auto& player_pos  = world.get<Comps::Transform>(player);
-    
-    auto sprite_holder = world.create_entity()
-        .with<Comps::VisualManager<EnumData::BLOCKS>>();
-        auto& block_sprites = world.get<Comps::VisualManager<EnumData::BLOCKS>>(sprite_holder);
-    
-    std::vector<EntityBuilder> chunk_holders;
+        .with<StorageComponents::Transform>(15.0f, 0.0f)
+        .with<StorageComponents::Camera>()
+        .with<StorageComponents::PhysicsDynamic>(world.get_p_world(), b2Vec2(1.0f, 2.0f), 
+                                                                              b2Vec2{15.0f, 0.0f});
+        auto& camera = world.get_data_of_entity<StorageComponents::Camera>(player);
+        auto& playerBody = world.get_data_of_entity<StorageComponents::PhysicsDynamic>(player).p_body;
 
-    world.load_block_sprites(block_sprites);
-    world.prepare();
+    std::vector<EntityBuilder> chunk_entities;
+    for (int i = 0; i < 3; ++i) {
+        auto e = world.create_entity()
+            .with<StorageComponents::Transform>((-1.0f + i ) * Game::K::chunk_size.x , 0.0f)
+            .with<GameComponents::ChunkGenerator>(perlin_noise)
+            .with<StorageComponents::PhysicsStatic>();
+        chunk_entities.push_back(e);
+    }
 
-    std::pair<sf::VertexArray, sf::RenderStates> render_data;
-    bool dirty = true;
+    auto block_visuals = world.create_entity()
+        .with<GameComponents::VisualManager<EnumData::Blocks>>();
+        auto& block_v = world.get_data_of_entity<GameComponents::VisualManager<EnumData::Blocks>>(block_visuals);
 
-    auto make_drawable = [&]() -> void {
-        const sf::Texture& done = main_camera.canvas->getTexture();
-        if (!main_camera.drawable)
-            main_camera.drawable = std::make_unique<sf::Sprite>(done);
-        main_camera.drawable->setTexture(done, true);
-    };
-    auto regen_chunks = [&]() -> void {
-        chunk_holders.clear();
+    world.load_block_sprites(block_v);
 
-        const int player_chunk_x = static_cast<int>(std::floor(player_pos.pos.x / (K::CHUNK_W * K::BLOCK_S)));
-        for (int dx = -2; dx <= 2; ++dx) {
-            const float chunk_x = (player_chunk_x + dx) * K::CHUNK_W;
+    System::gen_visible_chunks(world);
+    System::gen_chunk_hitboxes(world);
 
-            chunk_holders.push_back(
-                world.create_entity()
-                    .with<Comps::ChunkGenerator>(perlin_noise)
-                    .with<Comps::Transform>(chunk_x, 0.0f)
-                    .with<Comps::PhysicsStatic>()
-            );
-        }
+    auto make_camera_drawable = [&camera]() {
+        if (!camera.drawable)
+            camera.drawable = std::make_unique<sf::Sprite>(camera.canvas->getTexture());
+        else 
+            camera.drawable->setTexture(camera.canvas->getTexture(), true);
+};
 
-        System::gen_visible_chunks(world);
-        System::gen_chunk_hitboxes(world);
-        render_data = System::draw_chunks_va(world, sprite_holder);
-    };
+    auto [va, states] = System::draw_chunks_va(world, block_v);
 
     while (window.isOpen()) {
-        player_pos = world.get<Comps::Transform>(player);
         
+        System::apply_tick(world);
+        auto& player_pos = world.get_data_of_entity<StorageComponents::Transform>(player);
         while(const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        if (dirty) {
-            regen_chunks();
-            dirty = false;
-        }
+        window.clear(sf::Color::Red);
 
-        window.clear(sf::Color::Transparent);
+        camera.view.setCenter(player_pos.render_pos);
+        camera.canvas->setView(camera.view);
+        camera.canvas->clear(sf::Color(123, 196, 237)); //sky blue
 
-        System::apply_tick(world);
+        camera.canvas->draw(va, states); 
+        camera.canvas->display();
 
-        main_camera.view.setSize(sf::Vector2f{K::WIN_SIZE.x, -static_cast<float>(K::WIN_SIZE.y)});
-        main_camera.view.setCenter(player_pos.pos);
-        main_camera.canvas->setView(main_camera.view);
+        make_camera_drawable();
 
-        main_camera.canvas->clear(sf::Color(113, 196, 245));
-        main_camera.canvas->draw(render_data.first, render_data.second);
-        main_camera.canvas->display();
-
-        make_drawable();
-
-        window.draw(*main_camera.drawable);
+        window.draw(*camera.drawable);
         window.display();
     }
 
